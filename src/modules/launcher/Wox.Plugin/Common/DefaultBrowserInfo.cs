@@ -4,6 +4,8 @@
 
 using System;
 using System.Text;
+using System.Threading;
+
 using Wox.Plugin.Common.Win32;
 using Wox.Plugin.Logger;
 
@@ -14,16 +16,15 @@ namespace Wox.Plugin.Common
     /// </summary>
     public static class DefaultBrowserInfo
     {
-        private static readonly object _updateLock = new object();
-        private static int _lastUpdateTickCount = -1;
+        private static readonly Lock _updateLock = new Lock();
 
         /// <summary>Gets the path to the MS Edge browser executable.</summary>
-        public static string MSEdgePath =>
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86) +
-            @"\Microsoft\Edge\Application\msedge.exe";
+        public static string MSEdgePath => System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+            @"Microsoft\Edge\Application\msedge.exe");
 
         /// <summary>Gets the command line pattern of the MS Edge.</summary>
-        public static string MSEdgeArgumentsPattern => "--single-argument %1";
+        public const string MSEdgeArgumentsPattern = "--single-argument %1";
 
         public const string MSEdgeName = "Microsoft Edge";
 
@@ -41,7 +42,12 @@ namespace Wox.Plugin.Common
 
         public static bool IsDefaultBrowserSet { get => !string.IsNullOrEmpty(Path); }
 
-        public const int UpdateTimeout = 300;
+        public const long UpdateTimeout = 300;
+
+        private static long _lastUpdateTickCount = -UpdateTimeout;
+
+        private static bool _updatedOnce;
+        private static bool _errorLogged;
 
         /// <summary>
         /// Updates only if at least more than 300ms has passed since the last update, to avoid multiple calls to <see cref="Update"/>.
@@ -49,8 +55,8 @@ namespace Wox.Plugin.Common
         /// </summary>
         public static void UpdateIfTimePassed()
         {
-            int curTickCount = Environment.TickCount;
-            if (curTickCount - _lastUpdateTickCount > UpdateTimeout)
+            long curTickCount = Environment.TickCount64;
+            if (curTickCount - _lastUpdateTickCount >= UpdateTimeout)
             {
                 _lastUpdateTickCount = curTickCount;
                 Update();
@@ -61,11 +67,16 @@ namespace Wox.Plugin.Common
         /// Consider using <see cref="UpdateIfTimePassed"/> to avoid updating multiple times.
         /// (because of multiple plugins calling update at the same time.)
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "We want to keep the process alive but will log the exception")]
         public static void Update()
         {
             lock (_updateLock)
             {
+                if (!_updatedOnce)
+                {
+                    Log.Info("I've tried updating the chosen Web Browser info at least once.", typeof(DefaultBrowserInfo));
+                    _updatedOnce = true;
+                }
+
                 try
                 {
                     string progId = GetRegistryValue(
@@ -77,7 +88,7 @@ namespace Wox.Plugin.Common
                     if (appName != null)
                     {
                         // Handle indirect strings:
-                        if (appName.StartsWith("@", StringComparison.Ordinal))
+                        if (appName.StartsWith('@'))
                         {
                             appName = GetIndirectString(appName);
                         }
@@ -106,6 +117,18 @@ namespace Wox.Plugin.Common
                         commandPattern = GetIndirectString(commandPattern);
                     }
 
+                    // HACK: for firefox installed through Microsoft store
+                    // When installed through Microsoft Firefox the commandPattern does not have
+                    // quotes for the path. As the Program Files does have a space
+                    // the extracted path would be invalid, here we add the quotes to fix it
+                    const string FirefoxExecutableName = "firefox.exe";
+                    if (commandPattern.Contains(FirefoxExecutableName) && commandPattern.Contains(@"\WindowsApps\") && (!commandPattern.StartsWith('\"')))
+                    {
+                        var pathEndIndex = commandPattern.IndexOf(FirefoxExecutableName, StringComparison.Ordinal) + FirefoxExecutableName.Length;
+                        commandPattern = commandPattern.Insert(pathEndIndex, "\"");
+                        commandPattern = commandPattern.Insert(0, "\"");
+                    }
+
                     if (commandPattern.StartsWith('\"'))
                     {
                         var endQuoteIndex = commandPattern.IndexOf('\"', 1);
@@ -125,6 +148,14 @@ namespace Wox.Plugin.Common
                         }
                     }
 
+                    // Packaged applications could be an URI. Example: shell:AppsFolder\Microsoft.MicrosoftEdge.Stable_8wekyb3d8bbwe!App
+                    if (!System.IO.Path.Exists(Path) && !Uri.TryCreate(Path, UriKind.Absolute, out _))
+                    {
+                        throw new ArgumentException(
+                            $"Command validation failed: {commandPattern}",
+                            nameof(commandPattern));
+                    }
+
                     if (string.IsNullOrEmpty(Path))
                     {
                         throw new ArgumentOutOfRangeException(
@@ -134,11 +165,16 @@ namespace Wox.Plugin.Common
                 }
                 catch (Exception e)
                 {
-                    // fallback to MS Edge
+                    // Fallback to MS Edge
                     Path = MSEdgePath;
                     Name = MSEdgeName;
                     ArgumentsPattern = MSEdgeArgumentsPattern;
-                    Log.Exception("Exception when retrieving browser path/name. Path and Name are set to use Microsoft Edge.", e, typeof(DefaultBrowserInfo));
+
+                    if (!_errorLogged)
+                    {
+                        Log.Exception("Exception when retrieving browser path/name. Path and Name are set to use Microsoft Edge.", e, typeof(DefaultBrowserInfo));
+                        _errorLogged = true;
+                    }
                 }
 
                 string GetRegistryValue(string registryLocation, string valueName)

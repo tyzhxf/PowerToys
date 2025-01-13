@@ -2,7 +2,10 @@
 // The Microsoft Corporation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.ComponentModel;
+using System.Globalization;
+
 using FancyZonesEditor.ViewModels;
 
 namespace FancyZonesEditor.Utils
@@ -17,6 +20,7 @@ namespace FancyZonesEditor.Utils
             ScreenBoundsHeight = height;
             ScreenBoundsWidth = width;
             DPI = dpi;
+            Scaling = string.Format(CultureInfo.InvariantCulture, format: "{0}%", arg0: (int)Math.Round(dpi * 100 / 96.0));
             Selected = selected;
         }
 
@@ -44,6 +48,8 @@ namespace FancyZonesEditor.Utils
 
         public int DPI { get; set; }
 
+        public string Scaling { get; set; }
+
         public string Dimensions
         {
             get
@@ -55,7 +61,7 @@ namespace FancyZonesEditor.Utils
                 }
                 else
                 {
-                    return ScreenBoundsWidth + " x " + ScreenBoundsHeight;
+                    return ScreenBoundsWidth + " × " + ScreenBoundsHeight;
                 }
             }
         }

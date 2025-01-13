@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+
 using Microsoft.PowerToys.Run.Plugin.Registry.Classes;
 using Microsoft.PowerToys.Run.Plugin.Registry.Constants;
 using Microsoft.PowerToys.Run.Plugin.Registry.Properties;
@@ -13,8 +14,6 @@ using Microsoft.Win32;
 
 namespace Microsoft.PowerToys.Run.Plugin.Registry.Helper
 {
-#pragma warning disable CA1031 // Do not catch general exception types
-
     /// <summary>
     /// Helper class to easier work with the registry
     /// </summary>
@@ -44,7 +43,7 @@ namespace Microsoft.PowerToys.Run.Plugin.Registry.Helper
         /// </summary>
         /// <param name="query">The query to search</param>
         /// <returns>A combination of a list of base <see cref="RegistryKey"/> and the sub keys</returns>
-        internal static (IEnumerable<RegistryKey>? baseKey, string subKey) GetRegistryBaseKey(in string query)
+        internal static (IEnumerable<RegistryKey>? BaseKey, string SubKey) GetRegistryBaseKey(in string query)
         {
             if (string.IsNullOrWhiteSpace(query))
             {
@@ -154,7 +153,7 @@ namespace Microsoft.PowerToys.Run.Plugin.Registry.Helper
         /// <param name="parentKey">The parent-key, also the root to start the search</param>
         /// <param name="searchSubKey">The sub-key to find</param>
         /// <returns>A list with all found registry sub-keys</returns>
-        private static ICollection<RegistryEntry> FindSubKey(in RegistryKey parentKey, in string searchSubKey)
+        private static Collection<RegistryEntry> FindSubKey(in RegistryKey parentKey, in string searchSubKey)
         {
             var list = new Collection<RegistryEntry>();
 
@@ -206,7 +205,7 @@ namespace Microsoft.PowerToys.Run.Plugin.Registry.Helper
         /// <param name="parentKey">The registry parent-key</param>
         /// <param name="maxCount">(optional) The maximum count of the results</param>
         /// <returns>A list with all found registry sub-keys</returns>
-        private static ICollection<RegistryEntry> GetAllSubKeys(in RegistryKey parentKey, in int maxCount = 50)
+        private static Collection<RegistryEntry> GetAllSubKeys(in RegistryKey parentKey, in int maxCount = 50)
         {
             var list = new Collection<RegistryEntry>();
 
@@ -230,6 +229,4 @@ namespace Microsoft.PowerToys.Run.Plugin.Registry.Helper
             return list;
         }
     }
-
-    #pragma warning restore CA1031 // Do not catch general exception types
 }

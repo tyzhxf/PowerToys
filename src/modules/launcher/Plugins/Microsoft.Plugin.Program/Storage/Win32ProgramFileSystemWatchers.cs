@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+
 using Wox.Infrastructure.Storage;
 using Wox.Plugin.Logger;
 
@@ -44,9 +45,7 @@ namespace Microsoft.Plugin.Program.Storage
                 {
                     Directory.GetFiles(path);
                 }
-#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
                 {
                     Log.Exception($"Failed to get files in {path}", ex, typeof(Win32ProgramFileSystemWatchers));
                     invalidPaths.Add(path);

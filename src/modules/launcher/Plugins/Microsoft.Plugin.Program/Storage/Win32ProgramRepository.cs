@@ -6,12 +6,13 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Globalization;
 using System.IO;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
+
 using Wox.Infrastructure.Storage;
 using Wox.Plugin.Logger;
+
 using Win32Program = Microsoft.Plugin.Program.Programs.Win32Program;
 
 namespace Microsoft.Plugin.Program.Storage
@@ -24,7 +25,6 @@ namespace Microsoft.Plugin.Program.Storage
         private const string LnkExtension = ".lnk";
         private const string UrlExtension = ".url";
 
-        private IStorage<IList<Programs.Win32Program>> _storage;
         private ProgramPluginSettings _settings;
         private IList<IFileSystemWatcherWrapper> _fileSystemWatcherHelpers;
         private string[] _pathsToWatch;
@@ -33,10 +33,9 @@ namespace Microsoft.Plugin.Program.Storage
 
         private static ConcurrentQueue<string> commonEventHandlingQueue = new ConcurrentQueue<string>();
 
-        public Win32ProgramRepository(IList<IFileSystemWatcherWrapper> fileSystemWatcherHelpers, IStorage<IList<Win32Program>> storage, ProgramPluginSettings settings, string[] pathsToWatch)
+        public Win32ProgramRepository(IList<IFileSystemWatcherWrapper> fileSystemWatcherHelpers, ProgramPluginSettings settings, string[] pathsToWatch)
         {
             _fileSystemWatcherHelpers = fileSystemWatcherHelpers;
-            _storage = storage ?? throw new ArgumentNullException(nameof(storage), "Win32ProgramRepository requires an initialized storage interface");
             _settings = settings ?? throw new ArgumentNullException(nameof(settings), "Win32ProgramRepository requires an initialized settings object");
             _pathsToWatch = pathsToWatch;
             _numberOfPathsToWatch = pathsToWatch.Length;
@@ -92,7 +91,6 @@ namespace Microsoft.Plugin.Program.Storage
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Intentionally keeping the process alive>")]
         private void OnAppRenamed(object sender, RenamedEventArgs e)
         {
             string oldPath = e.OldFullPath;
@@ -142,7 +140,6 @@ namespace Microsoft.Plugin.Program.Storage
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Intentionally keeping the process alive")]
         private void OnAppDeleted(object sender, FileSystemEventArgs e)
         {
             string path = e.FullPath;
@@ -155,7 +152,7 @@ namespace Microsoft.Plugin.Program.Storage
                 // Using OrdinalIgnoreCase since this is used internally
                 if (extension.Equals(LnkExtension, StringComparison.OrdinalIgnoreCase))
                 {
-                    app = GetAppWithSameLnkResolvedPath(path);
+                    app = GetAppWithSameLnkFilePath(path);
                     if (app == null)
                     {
                         // Cancelled links won't have a resolved path.
@@ -200,12 +197,12 @@ namespace Microsoft.Plugin.Program.Storage
 
         // To mitigate the issue faced (as stated above) when a shortcut application is renamed, the Exe FullPath and executable name must be obtained.
         // Unlike the rename event args, since we do not have a newPath, we iterate through all the programs and find the one with the same LnkResolved path.
-        private Programs.Win32Program GetAppWithSameLnkResolvedPath(string lnkResolvedPath)
+        private Programs.Win32Program GetAppWithSameLnkFilePath(string lnkFilePath)
         {
             foreach (Programs.Win32Program app in Items)
             {
                 // Using Invariant / OrdinalIgnoreCase since we're comparing paths
-                if (lnkResolvedPath.ToUpperInvariant().Equals(app.LnkResolvedPath, StringComparison.OrdinalIgnoreCase))
+                if (lnkFilePath.ToUpperInvariant().Equals(app.LnkFilePath, StringComparison.OrdinalIgnoreCase))
                 {
                     return app;
                 }
@@ -247,17 +244,6 @@ namespace Microsoft.Plugin.Program.Storage
             var applications = Programs.Win32Program.All(_settings);
             Log.Info($"Indexed {applications.Count} win32 applications", GetType());
             SetList(applications);
-        }
-
-        public void Save()
-        {
-            _storage.Save(Items);
-        }
-
-        public void Load()
-        {
-            var items = _storage.TryLoad(Array.Empty<Win32Program>());
-            SetList(items);
         }
     }
 }

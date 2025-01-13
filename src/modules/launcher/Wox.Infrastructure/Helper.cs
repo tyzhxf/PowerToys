@@ -9,6 +9,7 @@ using System.IO.Abstractions;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+
 using Wox.Plugin.Logger;
 
 namespace Wox.Infrastructure
@@ -20,6 +21,15 @@ namespace Wox.Infrastructure
         private static readonly IFile File = FileSystem.File;
         private static readonly IFileInfoFactory FileInfo = FileSystem.FileInfo;
         private static readonly IDirectory Directory = FileSystem.Directory;
+
+        private static readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Converters =
+            {
+                new JsonStringEnumConverter(),
+            },
+        };
 
         /// <summary>
         /// http://www.yinwang.org/blog-cn/2015/11/21/programming-philosophy
@@ -61,8 +71,8 @@ namespace Wox.Infrastructure
                 }
                 else
                 {
-                    var time1 = FileInfo.FromFileName(bundledDataPath).LastWriteTimeUtc;
-                    var time2 = FileInfo.FromFileName(dataPath).LastWriteTimeUtc;
+                    var time1 = FileInfo.New(bundledDataPath).LastWriteTimeUtc;
+                    var time2 = FileInfo.New(dataPath).LastWriteTimeUtc;
                     if (time1 != time2)
                     {
                         File.Copy(bundledDataPath, dataPath, true);
@@ -81,20 +91,12 @@ namespace Wox.Infrastructure
 
         public static string Formatted<T>(this T t)
         {
-            var formatted = JsonSerializer.Serialize(t, new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                Converters =
-                {
-                    new JsonStringEnumConverter(),
-                },
-            });
+            var formatted = JsonSerializer.Serialize(t, _serializerOptions);
 
             return formatted;
         }
 
         // Function to run as admin for context menu items
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Suppressing this to enable FxCop. We are logging the exception, and going forward general exceptions should not be caught")]
         public static void RunAsAdmin(string path)
         {
             var info = new ProcessStartInfo
@@ -116,7 +118,6 @@ namespace Wox.Infrastructure
         }
 
         // Function to run as other user for context menu items
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Suppressing this to enable FxCop. We are logging the exception, and going forward general exceptions should not be caught")]
         public static void RunAsUser(string path)
         {
             var info = new ProcessStartInfo
@@ -150,7 +151,11 @@ namespace Wox.Infrastructure
 
         public static bool OpenCommandInShell(string path, string pattern, string arguments, string workingDir = null, ShellRunAsType runAs = ShellRunAsType.None, bool runWithHiddenWindow = false)
         {
-            if (pattern.Contains("%1", StringComparison.Ordinal))
+            if (string.IsNullOrEmpty(pattern))
+            {
+                Log.Warn($"Trying to run OpenCommandInShell with an empty pattern. The default browser definition might have issues. Path: '${path ?? string.Empty}' ; Arguments: '${arguments ?? string.Empty}' ; Working Directory: '${workingDir ?? string.Empty}'", typeof(Helper));
+            }
+            else if (pattern.Contains("%1", StringComparison.Ordinal))
             {
                 arguments = pattern.Replace("%1", arguments);
             }
