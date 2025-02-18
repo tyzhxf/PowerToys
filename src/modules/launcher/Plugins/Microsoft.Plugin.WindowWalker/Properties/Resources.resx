@@ -121,7 +121,7 @@
     <value>Window Walker</value>
   </data>
   <data name="wox_plugin_windowwalker_plugin_description" xml:space="preserve">
-    <value>Switches between open windows.</value>
+    <value>Switches between open windows</value>
   </data>
   <data name="wox_plugin_windowwalker_Running" xml:space="preserve">
     <value>Running</value>
@@ -162,7 +162,7 @@
     <value>Process id</value>
   </data>
   <data name="wox_plugin_windowwalker_ExplorerInfoSubTitle" xml:space="preserve">
-    <value>Folder windows doesn't run in separate processes. (Klick to open Explorer properties.)</value>
+    <value>Folder windows do not run in separate processes. (Click to open Explorer properties.)</value>
     <comment>Explorer is here the program File Explorer</comment>
   </data>
   <data name="wox_plugin_windowwalker_ExplorerInfoTitle" xml:space="preserve">
@@ -201,5 +201,8 @@
   </data>
   <data name="wox_plugin_windowwalker_SettingSubtitleDesktopName_Description" xml:space="preserve">
     <value>This information is only shown in subtitle and tool tip, if you have at least two desktops.</value>
+  </data>
+  <data name="wox_plugin_windowwalker_NotResponding" xml:space="preserve">
+    <value>Not Responding</value>
   </data>
 </root>

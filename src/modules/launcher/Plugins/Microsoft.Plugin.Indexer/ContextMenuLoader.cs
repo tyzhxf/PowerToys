@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+
 using Microsoft.Plugin.Indexer.SearchHelper;
 using Wox.Infrastructure;
 using Wox.Plugin;
@@ -36,7 +37,6 @@ namespace Microsoft.Plugin.Indexer
             _context = context;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "We want to keep the process alive, and instead log and show an error message")]
         public List<ContextMenuResult> LoadContextMenus(Result selectedResult)
         {
             var contextMenus = new List<ContextMenuResult>();
@@ -61,7 +61,7 @@ namespace Microsoft.Plugin.Indexer
                     PluginName = Assembly.GetExecutingAssembly().GetName().Name,
                     Title = Properties.Resources.Microsoft_plugin_indexer_copy_path,
                     Glyph = "\xE8C8",
-                    FontFamily = "Segoe MDL2 Assets",
+                    FontFamily = "Segoe Fluent Icons,Segoe MDL2 Assets",
                     AcceleratorKey = Key.C,
                     AcceleratorModifiers = ModifierKeys.Control,
 
@@ -87,7 +87,7 @@ namespace Microsoft.Plugin.Indexer
                     PluginName = Assembly.GetExecutingAssembly().GetName().Name,
                     Title = Properties.Resources.Microsoft_plugin_indexer_open_in_console,
                     Glyph = "\xE756",
-                    FontFamily = "Segoe MDL2 Assets",
+                    FontFamily = "Segoe Fluent Icons,Segoe MDL2 Assets",
                     AcceleratorKey = Key.C,
                     AcceleratorModifiers = ModifierKeys.Control | ModifierKeys.Shift,
 
@@ -119,7 +119,6 @@ namespace Microsoft.Plugin.Indexer
         }
 
         // Function to add the context menu item to run as admin
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "We want to keep the process alive, and instead log the exception message")]
         private static ContextMenuResult CreateRunAsAdminContextMenu(SearchResult record)
         {
             return new ContextMenuResult
@@ -127,7 +126,7 @@ namespace Microsoft.Plugin.Indexer
                 PluginName = Assembly.GetExecutingAssembly().GetName().Name,
                 Title = Properties.Resources.Microsoft_plugin_indexer_run_as_administrator,
                 Glyph = "\xE7EF",
-                FontFamily = "Segoe MDL2 Assets",
+                FontFamily = "Segoe Fluent Icons,Segoe MDL2 Assets",
                 AcceleratorKey = Key.Enter,
                 AcceleratorModifiers = ModifierKeys.Control | ModifierKeys.Shift,
                 Action = _ =>
@@ -147,7 +146,6 @@ namespace Microsoft.Plugin.Indexer
         }
 
         // Function to add the context menu item to run as admin
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "We want to keep the process alive, and instead log the exception message")]
         private static ContextMenuResult CreateRunAsUserContextMenu(SearchResult record)
         {
             return new ContextMenuResult
@@ -155,7 +153,7 @@ namespace Microsoft.Plugin.Indexer
                 PluginName = Assembly.GetExecutingAssembly().GetName().Name,
                 Title = Properties.Resources.Microsoft_plugin_indexer_run_as_user,
                 Glyph = "\xE7EE",
-                FontFamily = "Segoe MDL2 Assets",
+                FontFamily = "Segoe Fluent Icons,Segoe MDL2 Assets",
                 AcceleratorKey = Key.U,
                 AcceleratorModifiers = ModifierKeys.Control | ModifierKeys.Shift,
                 Action = _ =>
@@ -190,7 +188,6 @@ namespace Microsoft.Plugin.Indexer
             return false;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "We want to keep the process alive, and instead log and show an error message")]
         private ContextMenuResult CreateOpenContainingFolderResult(SearchResult record)
         {
             return new ContextMenuResult
@@ -198,7 +195,7 @@ namespace Microsoft.Plugin.Indexer
                 PluginName = Assembly.GetExecutingAssembly().GetName().Name,
                 Title = Properties.Resources.Microsoft_plugin_indexer_open_containing_folder,
                 Glyph = "\xE838",
-                FontFamily = "Segoe MDL2 Assets",
+                FontFamily = "Segoe Fluent Icons,Segoe MDL2 Assets",
                 AcceleratorKey = Key.E,
                 AcceleratorModifiers = ModifierKeys.Control | ModifierKeys.Shift,
                 Action = _ =>

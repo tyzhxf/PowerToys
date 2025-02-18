@@ -1,15 +1,22 @@
 #include "pch.h"
+
+#include "Generated Files/resource.h"
+#include "PowerRenameConstants.h"
 #include "PowerRenameExt.h"
+
 #include <interface/powertoy_module_interface.h>
 #include <settings.h>
 #include <trace.h>
+#include <VersionHelpers.h>
+
 #include <common/SettingsAPI/settings_objects.h>
 #include <common/logger/logger.h>
 #include <common/utils/logger_helper.h>
+#include <common/utils/package.h>
+#include <common/utils/process_path.h>
 #include <common/utils/resources.h>
-#include "Generated Files/resource.h"
+
 #include <atomic>
-#include <dll/PowerRenameConstants.h>
 
 std::atomic<DWORD> g_dwModuleRefCount = 0;
 HINSTANCE g_hInst = 0;
@@ -155,7 +162,7 @@ class PowerRenameModule : public PowertoyModuleIface
 {
 private:
     // Enabled by default
-    bool m_enabled = true;
+    bool m_enabled = false;
     std::wstring app_name;
     //contains the non localized key of the powertoy
     std::wstring app_key;
@@ -173,20 +180,35 @@ public:
         return app_key.c_str();
     }
 
+    // Return the configured status for the gpo policy for the module
+    virtual powertoys_gpo::gpo_rule_configured_t gpo_policy_enabled_configuration() override
+    {
+        return powertoys_gpo::getConfiguredPowerRenameEnabledValue();
+    }
+
     // Enable the powertoy
     virtual void enable()
     {
         Logger::info(L"PowerRename enabled");
         m_enabled = true;
-        save_settings();
+
+        if (package::IsWin11OrGreater())
+        {
+            std::wstring path = get_module_folderpath(g_hInst);
+            std::wstring packageUri = path + L"\\PowerRenameContextMenuPackage.msix";
+
+            if (!package::IsPackageRegistered(PowerRenameConstants::ModulePackageDisplayName))
+            {
+                package::RegisterSparsePackage(path, packageUri);
+            }
+        }
     }
 
     // Disable the powertoy
     virtual void disable()
     {
-        Logger::info(L"PowerRename disabled");
         m_enabled = false;
-        save_settings();
+        Logger::info(L"PowerRename disabled");
     }
 
     // Returns if the powertoy is enabled
@@ -265,7 +287,7 @@ public:
 
             Trace::SettingsChanged();
         }
-        catch (std::exception e)
+        catch (std::exception& e)
         {
             Logger::error("Configuration parsing failed: {}", std::string{ e.what() });
         }
@@ -273,7 +295,7 @@ public:
 
     // Signal from the Settings editor to call a custom action.
     // This can be used to spawn more complex editors.
-    virtual void call_custom_action(const wchar_t* action) override
+    virtual void call_custom_action(const wchar_t* /*action*/) override
     {
     }
 
@@ -291,8 +313,6 @@ public:
 
     void save_settings()
     {
-        CSettingsInstance().SetEnabled(m_enabled);
-        CSettingsInstance().Save();
         Trace::EnablePowerRename(m_enabled);
     }
 

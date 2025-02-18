@@ -6,18 +6,20 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
+
 using Wox.Plugin;
+using Wox.Plugin.Logger;
 
 namespace Microsoft.PowerToys.Run.Plugin.Calculator
 {
     public static class ResultHelper
     {
-        public static Result CreateResult(CalculateResult result, string iconPath)
+        public static Result CreateResult(CalculateResult result, string iconPath, CultureInfo inputCulture, CultureInfo outputCulture)
         {
-            return CreateResult(result.RoundedResult, iconPath);
+            return CreateResult(result.RoundedResult, iconPath, inputCulture, outputCulture);
         }
 
-        public static Result CreateResult(decimal? roundedResult, string iconPath)
+        public static Result CreateResult(decimal? roundedResult, string iconPath, CultureInfo inputCulture, CultureInfo outputCulture)
         {
             // Return null when the expression is not a valid calculator query.
             if (roundedResult == null)
@@ -28,15 +30,16 @@ namespace Microsoft.PowerToys.Run.Plugin.Calculator
             return new Result
             {
                 // Using CurrentCulture since this is user facing
-                Title = roundedResult?.ToString(CultureInfo.CurrentCulture),
+                Title = roundedResult?.ToString(outputCulture),
                 IcoPath = iconPath,
                 Score = 300,
                 SubTitle = Properties.Resources.wox_plugin_calculator_copy_number_to_clipboard,
-                Action = c => Action(roundedResult),
+                Action = c => Action(roundedResult, outputCulture),
+                QueryTextDisplay = roundedResult?.ToString(inputCulture),
             };
         }
 
-        public static bool Action(decimal? roundedResult)
+        public static bool Action(decimal? roundedResult, CultureInfo culture)
         {
             var ret = false;
 
@@ -46,12 +49,13 @@ namespace Microsoft.PowerToys.Run.Plugin.Calculator
                 {
                     try
                     {
-                        Clipboard.SetText(roundedResult?.ToString(CultureInfo.CurrentCulture));
+                        Clipboard.SetText(roundedResult?.ToString(culture));
                         ret = true;
                     }
-                    catch (ExternalException)
+                    catch (ExternalException ex)
                     {
-                        MessageBox.Show(Properties.Resources.wox_plugin_calculator_copy_failed);
+                        Log.Exception("Copy failed", ex, typeof(ResultHelper));
+                        MessageBox.Show(ex.Message, Properties.Resources.wox_plugin_calculator_copy_failed);
                     }
                 });
 
